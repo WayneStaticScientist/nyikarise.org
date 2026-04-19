@@ -83,7 +83,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <nav className="flex-1 px-4 space-y-1.5 mt-4 overflow-y-auto custom-scrollbar">
           {navItems.map((item) => {
-            const active = pathname === item.href;
+            const active = item.href === "/" ? pathname === "/" : pathname.includes(item.href);
             return (
               <Tooltip key={item.id} content={item.label} placement="right" isDisabled={sidebarOpen} closeDelay={0}>
                 <button
@@ -230,7 +230,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             <nav className="flex-1 space-y-2 overflow-y-auto pr-2">
               {navItems.map((item) => {
-                const active = pathname === item.href;
+                const active = item.href === "/" ? pathname === "/" : pathname.includes(item.href);
                 return (
                   <button
                     key={item.id}
