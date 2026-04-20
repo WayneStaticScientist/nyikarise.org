@@ -1,3 +1,5 @@
+import { TAvatar } from "@/types/avatar";
+
 export const calculateFileHash = async (file: File): Promise<string> => {
   const arrayBuffer = await file.arrayBuffer();
   const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
@@ -6,7 +8,7 @@ export const calculateFileHash = async (file: File): Promise<string> => {
 };
 
 export class AssetDecoder {
-  static decoder(img: { media: string; cache: string; cloud?: string }): string {
+  static decoder(img?: TAvatar | null): string {
     if (!img || !img.media) return "/placeholder.png";
 
     if (img.media.startsWith("http")) {

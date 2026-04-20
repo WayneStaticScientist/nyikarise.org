@@ -11,7 +11,6 @@ import {
 } from "@heroui/react";
 import {
   Home,
-  Users,
   MessageCircle,
   ShieldCheck,
   Briefcase,
@@ -26,7 +25,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
-import { useDashboardStore, type DashboardSection } from "@/stores/dashboardStore";
+import { useDashboardStore, } from "@/stores/dashboardStore";
+import { AssetDecoder } from "@/lib/utils";
 
 const navItems: Array<{
   id: string;
@@ -80,28 +80,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           )}
         </div>
-
         <nav className="flex-1 px-4 space-y-1.5 mt-4 overflow-y-auto custom-scrollbar">
           {navItems.map((item) => {
-            const active = item.href === "/" ? pathname === "/" : pathname.includes(item.href);
+            const active = item.href == pathname;
             return (
-              <Tooltip key={item.id} content={item.label} placement="right" isDisabled={sidebarOpen} closeDelay={0}>
+              <Tooltip key={item.id} isDisabled={sidebarOpen} closeDelay={0}>
                 <button
                   onClick={() => {
                     setSection(item.id as any);
                     router.push(item.href);
                   }}
+
                   className={`group relative flex w-full items-center gap-4 rounded-2xl px-4 py-3.5 transition-all duration-300 ${active
-                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                    ? "bg-[#e6e6e610] text-primary-foreground shadow-lg shadow-primary/20"
                     : "text-foreground-500 hover:bg-content2 hover:text-foreground"
                     }`}
                 >
-                  <item.icon className={`w-5 h-5 transition-transform duration-300 ${active ? 'scale-110' : 'group-hover:scale-110'}`} />
-                  {sidebarOpen && <span className="font-bold text-sm tracking-tight">{item.label}</span>}
-                  {active && sidebarOpen && (
+                  <item.icon className={`w-5 h-5 transition-transform duration-300 ${active ? 'scale-110 text-primary' : 'group-hover:scale-110'}`} />
+                  {sidebarOpen && <span className="font-bold text-sm tracking-tight">{item.label} </span>}
+                  {true && sidebarOpen && (
                     <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary-foreground" />
                   )}
                 </button>
+                <Tooltip.Content>
+                  {item.label}
+                </Tooltip.Content>
               </Tooltip>
             );
           })}
@@ -111,17 +114,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="p-4 border-t border-divider">
           <div className={`flex flex-col gap-2 rounded-3xl p-3 transition-colors ${sidebarOpen ? 'bg-content2/50 border border-divider' : ''}`}>
             <div className={`flex items-center gap-3 ${sidebarOpen ? '' : 'justify-center'}`}>
-              <Badge content="" color="success" shape="circle" placement="bottom-right" className="border-2 border-content1">
-                <Avatar
-                  src={user?.avatar?.media || "/avatar-placeholder.png"}
-                  size={sidebarOpen ? "md" : "sm"}
-                  className="rounded-2xl border border-divider shadow-sm"
-                />
-              </Badge>
+              <Avatar
+                size={sidebarOpen ? "md" : "sm"}
+                className="rounded-2xl border border-divider shadow-sm"
+              >
+                <Avatar.Image src={AssetDecoder.decoder(user?.avatar)} />
+              </Avatar>
               {sidebarOpen && (
                 <div className="flex flex-col min-w-0 animate-in fade-in slide-in-from-bottom-1">
                   <span className="text-sm font-black text-foreground truncate">{user?.fullName}</span>
-                  <span className="text-[10px] text-foreground-500 uppercase font-black tracking-widest">{user?.admin ? 'Super Admin' : 'Agent'}</span>
+                  <span className="text-[10px] text-foreground-500 uppercase font-black tracking-widest">{(user?.admin ?? 0) > 1 ? 'Super Admin' : 'Agent'}</span>
                 </div>
               )}
             </div>
@@ -129,26 +131,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <div className="flex flex-col gap-1 mt-2">
                 <Button
                   size="sm"
-                  variant="light"
                   className="justify-start px-3 text-foreground-500 hover:text-foreground hover:bg-content3"
-                  startContent={<Settings className="w-4 h-4" />}
                 >
-                  Account Settings
+                  <Settings className="w-4 h-4" />   Account Settings
                 </Button>
                 <Button
                   size="sm"
-                  variant="flat"
-                  color="danger"
+                  variant="danger"
                   className="rounded-xl font-bold mt-1"
                   onClick={handleLogout}
-                  startContent={<LogOut className="w-4 h-4" />}
                 >
+                  <LogOut className="w-4 h-4" />
                   Sign Out
                 </Button>
               </div>
             )}
             {!sidebarOpen && (
-              <Button isIconOnly variant="light" color="danger" className="mt-2" onClick={handleLogout}>
+              <Button isIconOnly variant="ghost" className="mt-2" onClick={handleLogout}>
                 <LogOut className="w-4 h-4" />
               </Button>
             )}
@@ -160,12 +159,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         <header className="h-20 border-b border-divider flex items-center justify-between px-6 lg:px-10 bg-background/60 backdrop-blur-xl z-30">
           <div className="flex items-center gap-4">
-            <Button isIconOnly variant="flat" className="lg:hidden rounded-xl" onClick={() => setSidebarOpen(true)}>
+            <Button isIconOnly variant="primary" className="lg:hidden rounded-xl" onClick={() => setSidebarOpen(true)}>
               <Menu className="w-6 h-6" />
             </Button>
             <Button
               isIconOnly
-              variant="light"
               className="hidden lg:flex text-foreground-400 hover:text-foreground hover:bg-content2 rounded-xl"
               onClick={() => setSidebarOpen(!sidebarOpen)}
             >
@@ -187,13 +185,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <kbd className="bg-content3 px-2 py-0.5 rounded-lg text-[10px] border border-divider font-sans font-bold">⌘K</kbd>
             </div>
             <div className="flex items-center gap-2">
-              <Tooltip content="Notifications">
-                <Button isIconOnly variant="flat" className="text-foreground-500 hover:text-primary relative rounded-xl bg-content2/50 border border-divider">
+              <Tooltip >
+                <Button isIconOnly className="text-foreground-500 hover:text-primary relative rounded-xl bg-content2/50 border border-divider">
                   <Bell className="w-5 h-5" />
                   <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-primary rounded-full ring-2 ring-background ring-offset-0" />
                 </Button>
+                <Tooltip.Content>
+                  Notifications
+                </Tooltip.Content>
               </Tooltip>
-              <Avatar src={user?.avatar?.media} size="sm" className="lg:hidden border border-divider shadow-sm" />
+              <Avatar size="sm" className="lg:hidden border border-divider shadow-sm" >
+                <Avatar.Image src={AssetDecoder.decoder(user?.avatar)} />
+              </Avatar>
             </div>
           </div>
         </header>
@@ -223,7 +226,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <span className="text-primary text-[10px] uppercase tracking-widest font-black leading-none">Mobile</span>
                 </div>
               </div>
-              <Button isIconOnly size="sm" variant="light" className="rounded-xl" onClick={() => setSidebarOpen(false)}>
+              <Button isIconOnly size="sm" variant="danger" className="rounded-xl" onClick={() => setSidebarOpen(false)}>
                 <X className="w-5 h-5 text-foreground-400" />
               </Button>
             </div>
@@ -254,15 +257,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="mt-auto pt-6 border-t border-divider">
               <div className="flex items-center justify-between p-4 bg-content2/50 rounded-3xl border border-divider">
                 <div className="flex items-center gap-3">
-                  <Badge content="" color="success" shape="circle" placement="bottom-right">
-                    <Avatar src={user?.avatar?.media} size="md" className="rounded-2xl border border-divider shadow-sm" />
+                  <Badge content="" color="success" placement="bottom-right">
+                    <Avatar size="md" className="rounded-2xl border border-divider shadow-sm">
+                      <Avatar.Image src={AssetDecoder.decoder(user?.avatar)} />
+                    </Avatar>
                   </Badge>
                   <div className="flex flex-col min-w-0">
                     <span className="text-sm font-black text-foreground truncate">{user?.fullName}</span>
                     <span className="text-[10px] text-foreground-500 uppercase font-bold tracking-widest">Agent</span>
                   </div>
                 </div>
-                <Button isIconOnly size="sm" variant="flat" color="danger" className="rounded-xl" onClick={handleLogout}>
+                <Button isIconOnly size="sm" variant="danger" className="rounded-xl" onClick={handleLogout}>
                   <LogOut className="w-4 h-4" />
                 </Button>
               </div>

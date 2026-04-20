@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { v4 as uuidv4 } from "uuid";
+import { TAvatar } from "@/types/avatar";
 
 interface User {
   id: string;
@@ -8,10 +9,7 @@ interface User {
   fullName: string;
   admin: number;
   phoneNumber: string;
-  avatar?: {
-    media: string;
-    cache: string;
-  };
+  avatar?: TAvatar;
 }
 
 interface AuthState {
@@ -39,24 +37,24 @@ export const useAuthStore = create<AuthState>()(
         try {
           const response = await api.post("/user/login", { phoneNumber, password });
           const { tokens, user } = response.data;
-          
+
           if (typeof window !== "undefined") {
-             const dId = get().deviceId;
-             localStorage.setItem("x-device-id", dId);
+            const dId = get().deviceId;
+            localStorage.setItem("x-device-id", dId);
           }
 
-          set({ 
+          set({
             user: {
-               id: user._id,
-               email: user.email,
-               fullName: user.fullName,
-               admin: user.admin,
-               phoneNumber: user.phoneNumber,
-               avatar: user.avatar
-            }, 
-            accessToken: tokens.accessToken, 
-            refreshToken: tokens.refreshToken, 
-            isAuthenticated: true 
+              id: user._id,
+              email: user.email,
+              fullName: user.fullName,
+              admin: user.admin,
+              phoneNumber: user.phoneNumber,
+              avatar: user.avatar
+            },
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
+            isAuthenticated: true
           });
         } catch (error) {
           throw error;

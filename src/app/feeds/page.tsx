@@ -7,6 +7,7 @@ import {
   Avatar,
   Badge,
   toast,
+  Spinner,
 } from "@heroui/react";
 import {
   Plus,
@@ -39,29 +40,59 @@ type Feed = {
 export default function FeedsPage() {
   const [feeds, setFeeds] = useState<Feed[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [isFocused, setIsFocused] = useState(false);
+
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const router = useRouter();
 
+  // Debounce search
   useEffect(() => {
-    fetchFeeds();
-  }, []);
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
-  const fetchFeeds = async () => {
+  // Fetch feeds when debounced query changes
+  useEffect(() => {
+    setPage(1);
+    fetchFeeds(1, debouncedQuery, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedQuery]);
+
+  const fetchFeeds = async (pageNum = 1, search = "", reset = false) => {
     try {
-      const response = await api.get("/feeds/all");
-      setFeeds(response.data.feeds);
+      if (reset) setIsLoading(true);
+      else setIsFetchingMore(true);
+
+      const response = await api.get(`/feeds/all?page=${pageNum}&limit=10&search=${encodeURIComponent(search)}`);
+      const newFeeds = response.data.feeds;
+
+      if (reset) {
+        setFeeds(newFeeds);
+      } else {
+        setFeeds(prev => [...prev, ...newFeeds]);
+      }
+      setHasMore(response.data.hasMore);
     } catch (error) {
       toast.danger('Failed to fetch feeds ' + error)
       console.error("Failed to fetch feeds:", error);
     } finally {
       setIsLoading(false);
+      setIsFetchingMore(false);
     }
   };
 
-  const filteredFeeds = feeds.filter(f =>
-    f.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    f.content.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleLoadMore = () => {
+    if (!hasMore || isFetchingMore) return;
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchFeeds(nextPage, debouncedQuery, false);
+  };
 
   return (
     <DashboardLayout>
@@ -72,15 +103,37 @@ export default function FeedsPage() {
             <p className="text-foreground-500 font-medium">Manage community posts and news updates.</p>
           </div>
           <div className="flex gap-3">
-            <div className="max-w-xs relative bg-content1 rounded-xl border border-divider">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-400" />
-              <input
-                type="text"
-                placeholder="Filter posts..."
-                className="bg-transparent border-none outline-none pl-10 pr-4 py-2 text-sm text-foreground w-full placeholder:text-foreground-400"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+            <div className="relative z-50">
+              <div className="max-w-xs relative bg-content1 rounded-xl border border-divider">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-400" />
+                <input
+                  type="text"
+                  placeholder="Filter posts..."
+                  className="bg-transparent border-none outline-none pl-10 pr-4 py-2 text-sm text-foreground w-full placeholder:text-foreground-400"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setIsFocused(true)}
+                  onBlur={() => setTimeout(() => setIsFocused(false), 200)}
+                />
+              </div>
+              {isFocused && searchQuery && (
+                <div className="absolute top-full mt-2 w-full max-w-xs bg-content1 border border-divider rounded-xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2">
+                  {isLoading ? (
+                    <div className="p-4 text-center text-sm text-foreground-400 flex items-center justify-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" /> Searching...
+                    </div>
+                  ) : feeds.length > 0 ? (
+                    feeds.slice(0, 5).map(s => (
+                      <div key={s._id} className="p-3 hover:bg-content2 cursor-pointer transition-colors" onClick={() => router.push(`/feeds/edit/${s._id}`)}>
+                        <h5 className="text-sm font-bold text-foreground line-clamp-1">{s.title}</h5>
+                        <p className="text-xs text-foreground-500 line-clamp-1 mt-0.5">{s.content}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-4 text-center text-sm text-foreground-400">No results found</div>
+                  )}
+                </div>
+              )}
             </div>
             <Button
               variant="primary"
@@ -97,7 +150,7 @@ export default function FeedsPage() {
           <div className="h-64 flex items-center justify-center">
             <Loader2 className="w-10 h-10 text-primary animate-spin" />
           </div>
-        ) : filteredFeeds.length === 0 ? (
+        ) : feeds.length === 0 ? (
           <Card className="bg-content1 border border-divider p-20 flex flex-col items-center justify-center text-center space-y-6 rounded-[2rem]">
             <div className="w-20 h-20 rounded-3xl bg-content2 border border-divider flex items-center justify-center text-foreground-400">
               <MessageSquare className="w-10 h-10" />
@@ -111,55 +164,77 @@ export default function FeedsPage() {
             </Button>
           </Card>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2">
-            {filteredFeeds.map((feed) => (
-              <Card key={feed._id} className="bg-content1 w-full border border-divider p-6 rounded-2xl hover:border-primary/50 transition-all group shadow-sm flex flex-col justify-between">
-                <div>
-                  <div className="flex gap-4 w-full">
-                    <Avatar className="w-12 h-12 border border-divider bg-background" />
-                    <div className="flex-1 space-y-3 w-full min-w-0">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-bold text-foreground line-clamp-1">{feed.title}</h4>
-                          <p className="text-[10px] uppercase tracking-wider font-bold text-foreground-400">{feed.user.fullName} • {new Date(feed.datePosted).toDateString()}</p>
+          <div className="space-y-6">
+            <div className="grid gap-6 md:grid-cols-2">
+              {feeds.map((feed) => (
+                <Card key={feed._id} className="bg-content1 w-full border border-divider p-6 rounded-2xl hover:border-primary/50 transition-all group shadow-sm flex flex-col justify-between">
+                  <div>
+                    <div className="flex gap-4 w-full">
+                      <Avatar className="w-12 h-12 border border-divider bg-background" />
+                      <div className="flex-1 space-y-3 w-full min-w-0">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="font-bold text-foreground line-clamp-1">{feed.title}</h4>
+                            <p className="text-[10px] uppercase tracking-wider font-bold text-foreground-400">{feed.user?.fullName || "User"} • {new Date(feed.datePosted).toDateString()}</p>
+                          </div>
+                          <Badge color="accent" className="rounded-lg font-bold text-[10px] bg-primary/10 text-primary border-none">{feed.views} Views</Badge>
                         </div>
-                        <Badge color="accent" className="rounded-lg font-bold text-[10px] bg-primary/10 text-primary border-none">{feed.views} Views</Badge>
-                      </div>
-                      <p className="text-sm text-foreground-500 line-clamp-3 leading-relaxed">{feed.content}</p>
+                        <div className="text-sm text-foreground-500 line-clamp-3 leading-relaxed">
+                          <div dangerouslySetInnerHTML={{ __html: feed.content }} />
+                        </div>
 
-                      {feed.avatars && feed.avatars.length > 0 && (
-                        <div className="grid grid-cols-3 gap-2 py-2 w-full overflow-x-auto">
-                          {feed.avatars.slice(0, 3).map((img, i) => (
-                            <FeedImage key={i} img={img} />
-                          ))}
-                        </div>
-                      )}
-                      <div className="flex items-center justify-between pt-2">
-                        <div className="flex items-center gap-6">
-                          <div className="flex items-center gap-2 text-foreground-500">
-                            <Heart className="w-4 h-4" />
-                            <span className="text-xs font-bold">{feed.likes}</span>
+                        {feed.avatars && feed.avatars.length > 0 && (
+                          <div className="grid grid-cols-3 gap-2 py-2 w-full overflow-x-auto">
+                            {feed.avatars.slice(0, 3).map((img, i) => (
+                              <FeedImage key={i} img={img} />
+                            ))}
                           </div>
-                          <div className="flex items-center gap-2 text-foreground-500">
-                            <MessageSquare className="w-4 h-4" />
-                            <span className="text-xs font-bold">{feed.comments}</span>
+                        )}
+                        <div className="flex items-center justify-between pt-2">
+                          <div className="flex items-center gap-6">
+                            <div className="flex items-center gap-2 text-foreground-500">
+                              <Heart className="w-4 h-4" />
+                              <span className="text-xs font-bold">{feed.likes}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-foreground-500">
+                              <MessageSquare className="w-4 h-4" />
+                              <span className="text-xs font-bold">{feed.comments}</span>
+                            </div>
                           </div>
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            className="font-bold rounded-lg px-4"
+                            onClick={() => router.push(`/feeds/edit/${feed._id}`)}
+                          >
+                            <Edit className="w-4 h-4" />
+                            Edit
+                          </Button>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="primary"
-                          className="font-bold rounded-lg px-4"
-                          onClick={() => router.push(`/feeds/edit/${feed._id}`)}
-                        >
-                          <Edit className="w-4 h-4" />
-                          Edit
-                        </Button>
                       </div>
                     </div>
                   </div>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              ))}
+            </div>
+
+            {hasMore && (
+              <div className="flex justify-center pt-4 pb-8">
+                <Button
+                  variant="ghost"
+                  className="font-bold rounded-xl px-8"
+                  onPress={handleLoadMore}
+                  isPending={isFetchingMore}
+                >
+                  {({ isPending }) => (
+                    <>
+                      {isPending ? <Spinner color="current" size="sm" /> : null}
+                      Load More
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>
