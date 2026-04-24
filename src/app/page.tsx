@@ -1,18 +1,14 @@
 "use client";
 
-import { useAuthStore } from "@/stores/authStore";
 import {
   Card,
-  Button,
   Avatar,
-  Badge,
   ProgressBar,
+  Spinner,
 } from "@heroui/react";
 import {
-  TrendingUp,
   Users,
   Activity,
-  Calendar,
   ArrowUpRight,
   Globe,
   Database,
@@ -21,11 +17,9 @@ import {
 } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import api from "@/lib/api";
-import { Divider } from "@/components/ui/divider";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 
 export default function DashboardHome() {
-  const { user } = useAuthStore();
   const [stats, setStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -76,7 +70,11 @@ export default function DashboardHome() {
       color: "warning"
     },
   ];
-
+  if (isLoading) {
+    return <div className="w-screen h-screen flex items-center justify-center">
+      <Spinner />
+    </div>
+  }
   return (
     <DashboardLayout>
       <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-10">
@@ -126,7 +124,7 @@ export default function DashboardHome() {
                   <p className="text-[10px] text-white/70 font-black uppercase tracking-[0.15em]">S3 Storage Metrics</p>
                 </div>
                 <div className="text-5xl font-black tracking-tighter flex items-end gap-1">
-                  {stats ? (stats.storageUsed / (1024 ** 3)).toFixed(2) : "1.45"}
+                  {stats ? (stats.storageUsed / (1024 ** 3)).toFixed(4) : "1.45"}
                   <span className="text-xl font-black opacity-60 pb-1.5 uppercase">GB</span>
                 </div>
                 <div className="w-full space-y-2">
@@ -161,12 +159,24 @@ export default function DashboardHome() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-6 rounded-3xl bg-content2 border border-divider text-center group hover:border-primary/50 transition-colors">
-                  <span className="text-3xl font-black text-foreground group-hover:text-primary transition-colors">{stats?.systemHealth?.uptime ? Math.floor(stats.systemHealth.uptime / 3600) : "14"}h</span>
+                  <span className="text-3xl font-black text-foreground group-hover:text-primary transition-colors">{(stats?.systemHealth?.uptime <= 3600) ? `${Math.floor((stats?.systemHealth?.uptime ?? 0) / 60)}m` : `${Math.floor((stats?.systemHealth?.uptime ?? 0) / 3600)}h`}</span>
                   <p className="text-[10px] text-foreground-500 font-bold uppercase tracking-widest mt-1">Uptime</p>
                 </div>
                 <div className="p-6 rounded-3xl bg-content2 border border-divider text-center group hover:border-primary/50 transition-colors">
-                  <span className="text-3xl font-black text-foreground group-hover:text-primary transition-colors">{stats?.systemHealth?.databaseConnections || 1}</span>
-                  <p className="text-[10px] text-foreground-500 font-bold uppercase tracking-widest mt-1">Core Access</p>
+                  <span className="text-3xl font-black text-foreground group-hover:text-primary transition-colors">{stats?.systemHealth?.database?.activePools || 0}</span>
+                  <p className="text-[10px] text-foreground-500 font-bold uppercase tracking-widest mt-1">Active Pools</p>
+                </div>
+                <div className="p-6 rounded-3xl bg-content2 border border-divider text-center group hover:border-primary/50 transition-colors">
+                  <span className="text-3xl font-black text-foreground group-hover:text-primary transition-colors">{stats?.systemHealth?.database?.status || 'not init'}</span>
+                  <p className="text-[10px] text-foreground-500 font-bold uppercase tracking-widest mt-1">Status</p>
+                </div>
+                <div className="p-6 rounded-3xl bg-content2 border border-divider text-center group hover:border-primary/50 transition-colors">
+                  <span className="text-3xl font-black text-foreground group-hover:text-primary transition-colors">{stats?.systemHealth?.database?.activeConnections || 0}</span>
+                  <p className="text-[10px] text-foreground-500 font-bold uppercase tracking-widest mt-1">Active Connections</p>
+                </div>
+                <div className="p-6 rounded-3xl bg-content2 border border-divider text-center group hover:border-primary/50 transition-colors">
+                  <span className="text-3xl font-black text-foreground group-hover:text-primary transition-colors">{stats?.systemHealth?.database?.readyState || 0}</span>
+                  <p className="text-[10px] text-foreground-500 font-bold uppercase tracking-widest mt-1">Ready State</p>
                 </div>
               </div>
 

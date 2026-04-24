@@ -1,19 +1,12 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { v4 as uuidv4 } from "uuid";
-import { TAvatar } from "@/types/avatar";
+import axios from "axios";
+import { IUser } from "@/types/user";
 
-interface User {
-  id: string;
-  email: string;
-  fullName: string;
-  admin: number;
-  phoneNumber: string;
-  avatar?: TAvatar;
-}
 
 interface AuthState {
-  user: User | null;
+  user: IUser | null;
   accessToken: string | null;
   refreshToken: string | null;
   deviceId: string;
@@ -21,7 +14,8 @@ interface AuthState {
   login: (phoneNumber: string, password: string) => Promise<void>;
   setTokens: (accessToken: string, refreshToken: string) => void;
   logout: () => void;
-  updateUser: (user: Partial<User>) => void;
+  updateUser: (user: Partial<IUser>) => void;
+  getUser: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -32,30 +26,35 @@ export const useAuthStore = create<AuthState>()(
       refreshToken: null,
       deviceId: typeof window !== "undefined" ? (localStorage.getItem("x-device-id") || uuidv4()) : uuidv4(),
       isAuthenticated: false,
+      getUser: async () => {
+        const { default: api } = await import("@/lib/api");
+        try {
+          const response = await api.get(`/user/getuser`);
+          const { user } = response.data;
+          set({
+            user: user,
+            isAuthenticated: true
+          });
+        } catch (error) {
+          throw error;
+        }
+      },
       login: async (phoneNumber, password) => {
         const { default: api } = await import("@/lib/api");
         try {
           const response = await api.post("/user/login", { phoneNumber, password });
           const { tokens, user } = response.data;
-
           if (typeof window !== "undefined") {
             const dId = get().deviceId;
             localStorage.setItem("x-device-id", dId);
           }
-
           set({
-            user: {
-              id: user._id,
-              email: user.email,
-              fullName: user.fullName,
-              admin: user.admin,
-              phoneNumber: user.phoneNumber,
-              avatar: user.avatar
-            },
+            user: user,
             accessToken: tokens.accessToken,
             refreshToken: tokens.refreshToken,
             isAuthenticated: true
           });
+          window.location.href = "/"
         } catch (error) {
           throw error;
         }

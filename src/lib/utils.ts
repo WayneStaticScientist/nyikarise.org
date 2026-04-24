@@ -26,3 +26,12 @@ export class AssetDecoder {
   }
 }
 
+export const axiosError = (error: any) => {
+  if (error.response) {
+    return error.response.data.message ?? error.response.data.error ?? error.response.data.errors ?? error.response.data.msg ?? error.response.data.message;
+  }
+  if (error.request) {
+    return "Network error";
+  }
+  return error.message ?? error.toString();
+}

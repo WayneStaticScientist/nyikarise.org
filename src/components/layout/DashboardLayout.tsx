@@ -7,6 +7,8 @@ import {
   Button,
   Badge,
   Tooltip,
+  toast,
+  Spinner,
 
 } from "@heroui/react";
 import {
@@ -26,7 +28,7 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useDashboardStore, } from "@/stores/dashboardStore";
-import { AssetDecoder } from "@/lib/utils";
+import { AssetDecoder, axiosError } from "@/lib/utils";
 
 const navItems: Array<{
   id: string;
@@ -45,26 +47,33 @@ const navItems: Array<{
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated, logout, getUser } = useAuthStore();
   const { sidebarOpen, setSidebarOpen, section, setSection } = useDashboardStore();
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-    if (!isAuthenticated && pathname !== "/login") {
-      router.push("/login");
+  const loadUser = async () => {
+    try {
+      await getUser();
+    } catch (error: any) {
+      toast.danger(axiosError(error));
+      if (error.response.status === 401) {
+        setTimeout(() => {
+          logout();
+          router.push("/login");
+        }, 1000);
+      }
     }
-  }, [isAuthenticated, router, pathname]);
-
-  if (!isMounted || (!isAuthenticated && pathname !== "/login")) {
-    return null;
   }
-
+  useEffect(() => {
+    loadUser();
+  }, [])
   const handleLogout = () => {
     logout();
     router.push("/login");
   };
-
+  if (!isAuthenticated) {
+    return <div className="w-screen h-screen flex items-center justify-center">
+      <Spinner />
+    </div>
+  }
   return (
     <div className="flex h-screen bg-background overflow-hidden font-sans">
       {/* Sidebar - Desktop */}

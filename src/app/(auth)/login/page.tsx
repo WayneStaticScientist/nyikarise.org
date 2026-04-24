@@ -28,11 +28,11 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
 
   // Redirect if already authenticated
-  useEffect(() => {
-    if (authState.isAuthenticated) {
-      router.push("/");
-    }
-  }, [authState.isAuthenticated, router]);
+  // useEffect(() => {
+  //   if (authState.isAuthenticated) {
+  //     router.push("/");
+  //   }
+  // }, [authState.isAuthenticated, router]);
 
   const handleLogin = async (e: React.ChangeEvent<HTMLFormElement>) => {
     e.preventDefault();

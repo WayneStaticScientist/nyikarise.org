@@ -30,7 +30,6 @@ type Accommodation = {
   avatars: Array<{ media: string; cache: string }>;
 };
 
-const roomTypes = ["Single Room", "Double Room", "Studio", "Apartment", "Dormitory"];
 
 export default function AccommodationsPage() {
   const [accommodations, setAccommodations] = useState<Accommodation[]>([]);
@@ -61,7 +60,7 @@ export default function AccommodationsPage() {
     try {
       const response = await api.get("/accommodations/all");
       if (response.data.success) {
-        setAccommodations(response.data.data);
+        setAccommodations(response.data.accommodations);
       }
     } catch (error) {
       console.error("Failed to fetch accommodations:", error);

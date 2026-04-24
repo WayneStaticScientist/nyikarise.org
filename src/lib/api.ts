@@ -34,7 +34,6 @@ const processQueue = (error: any, token: string | null = null) => {
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const { accessToken, deviceId } = useAuthStore.getState();
-
     // 1. Inject Authorization Token
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
@@ -95,19 +94,22 @@ api.interceptors.response.use(
 
         if (response.data.tokens) {
           const { accessToken: newAccess, refreshToken: newRefresh } = response.data.tokens;
-          
+
           // Update the store
           setTokens(newAccess, newRefresh);
-          
+
           processQueue(null, newAccess);
-          
+
           // Retry the original request
           originalRequest.headers.Authorization = `Bearer ${newAccess}`;
           return api(originalRequest);
         }
-      } catch (refreshError) {
+      } catch (refreshError: any) {
+        console.log("Error is ", refreshError)
         processQueue(refreshError, null);
-        logout();
+        if (refreshError.response?.status === 401) {
+          logout();
+        }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

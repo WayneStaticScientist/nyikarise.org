@@ -1,28 +1,17 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import {
   Card,
   Button,
-  Input,
-  ModalBody,
-  ModalFooter,
   Badge,
 } from "@heroui/react";
 import {
   Plus,
-  Search,
   Package,
   MapPin,
-  CheckCircle2,
-  ArrowRight,
-  ArrowLeft,
-  FileUp,
-  Trash2,
   Loader2,
   ShieldCheck,
   Zap,
-  Phone
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import api from "@/lib/api";
@@ -43,7 +32,6 @@ interface LostItem {
   avatars?: Array<{ media: string; cache: string }>;
 }
 
-const categories = ["Electronics", "Documents", "Keys", "Wallet/Bag", "Clothing", "Pets", "Other"];
 
 export default function LostAndFoundPage() {
   const [items, setItems] = useState<LostItem[]>([]);
