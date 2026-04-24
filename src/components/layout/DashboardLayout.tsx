@@ -53,13 +53,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     try {
       await getUser();
     } catch (error: any) {
-      toast.danger(axiosError(error));
-      if (error.response.status === 401) {
-        setTimeout(() => {
-          logout();
-          router.push("/login");
-        }, 1000);
-      }
     }
   }
   useEffect(() => {

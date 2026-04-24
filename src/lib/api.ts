@@ -1,5 +1,6 @@
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from "axios";
 import { useAuthStore } from "@/stores/authStore";
+import { toast } from "@heroui/react";
 
 // Type definition for queued requests during refresh
 interface QueuedRequest {
@@ -108,7 +109,11 @@ api.interceptors.response.use(
         console.log("Error is ", refreshError)
         processQueue(refreshError, null);
         if (refreshError.response?.status === 401) {
-          logout();
+          toast.danger("Session expired. Please login again.");
+          setTimeout(() => {
+            logout();
+            if (typeof window !== "undefined") window.location.href = "/login";
+          }, 1500);
         }
         return Promise.reject(refreshError);
       } finally {

@@ -64,6 +64,11 @@ export const useAuthStore = create<AuthState>()(
       },
       logout: () => {
         set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false });
+        localStorage.removeItem("x-device-id");
+        localStorage.removeItem("auth-storage");
+        if (typeof window !== "undefined") {
+          window.location.href = "/login";
+        }
       },
       updateUser: (userData) =>
         set((state) => ({
