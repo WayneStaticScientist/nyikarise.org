@@ -22,19 +22,19 @@ import {
   X,
   LogOut,
   Search,
-  Sparkles,
-  Settings,
-  ChevronRight,
+  Sparkles, Settings, ChevronRight, Shield
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useDashboardStore, } from "@/stores/dashboardStore";
 import { AssetDecoder, axiosError } from "@/lib/utils";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const navItems: Array<{
   id: string;
   label: string;
   icon: any;
   href: string;
+  adminRequired?: number;
 }> = [
     { id: "overview", label: "Dashboard", icon: Home, href: "/" },
     { id: "feeds", label: "Social Feeds", icon: MessageCircle, href: "/feeds" },
@@ -42,6 +42,7 @@ const navItems: Array<{
     { id: "jobs", label: "Career Portal", icon: Briefcase, href: "/jobs" },
     { id: "lost-and-found", label: "Lost & Found", icon: Search, href: "/lost-and-found" },
     { id: "files", label: "Media Library", icon: FileText, href: "/files" },
+    { id: "permissions", label: "Permissions", icon: Shield, href: "/permissions", adminRequired: 2 },
   ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -84,6 +85,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
         <nav className="flex-1 px-4 space-y-1.5 mt-4 overflow-y-auto custom-scrollbar">
           {navItems.map((item) => {
+            if (item.adminRequired && (user?.admin || 0) < item.adminRequired) {
+              return null;
+            }
             const active = item.href == pathname;
             return (
               <Tooltip key={item.id} isDisabled={sidebarOpen} closeDelay={0}>
@@ -187,6 +191,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <kbd className="bg-content3 px-2 py-0.5 rounded-lg text-[10px] border border-divider font-sans font-bold">⌘K</kbd>
             </div>
             <div className="flex items-center gap-2">
+              <ThemeToggle />
               <Tooltip >
                 <Button isIconOnly className="text-foreground-500 hover:text-primary relative rounded-xl bg-content2/50 border border-divider">
                   <Bell className="w-5 h-5" />
@@ -235,6 +240,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             <nav className="flex-1 space-y-2 overflow-y-auto pr-2">
               {navItems.map((item) => {
+                if (item.adminRequired && (user?.admin || 0) < item.adminRequired) {
+                  return null;
+                }
                 const active = item.href === "/" ? pathname === "/" : pathname.includes(item.href);
                 return (
                   <button

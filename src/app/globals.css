@@ -2,6 +2,11 @@
 @import "@heroui/styles";
 
 :root {
+  --background: #ffffff;
+  --foreground: #09090b;
+}
+
+.dark {
   --background: #09090b;
   --foreground: #fafafa;
 }
